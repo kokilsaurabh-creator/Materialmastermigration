@@ -494,7 +494,7 @@ def render_configuration_dashboard():
         st.session_state['selected_nav'] = selected_nav
         st.rerun()
 
-    # --- GLOBAL SAP VIEWS DICTIONARY (Pruned for MM & P2P strictly) ---
+    # --- GLOBAL SAP VIEWS DICTIONARY (Updated with Distribution Chains & Valuation Data) ---
     sap_views = {
         "1. Basic Data (S_MARA)": {
             "Product Number": True, "Product Type": True, "Description": True,
@@ -571,7 +571,22 @@ def render_configuration_dashboard():
             "Unit of Measure for Minimum Quantity": False, "Maximum Quantity": False,
             "Unit of Measure for Maximum Quantity": False, "Min.Qty (% of Max. Qty)": False
         },
-        "7. Tax Classification (S_MLAN)": {
+        "7. Distribution Chains (S_MVKE)": {
+            "Product Number": True, "Sales Organization": True, "Distribution Channel": True,
+            "Sales Unit (ISO Format)": False, "Delivery Plant": False,
+            "Distribution-Chain-Spec. Product Status": False, "Valid-From Date for Product Status": False,
+            "Indicator: Cash Discount": False, "Minimum Delivery Quantity": False,
+            "Minimum Order Quantity in Base UoM": False, "Delivery Unit": False,
+            "Unit of Measure (ISO) of Delivery Unit": False, "Default Contract Term": False,
+            "Alternative Contract Term 1 & 2": False, "Unit for Contract Term": False,
+            "Default Extension Period": False, "Alternative Extension Period 1 & 2": False,
+            "Unit for Extension Period": False, "Rounding Profile": False,
+            "Product Pricing Group": False, "Volume Rebate Group": False,
+            "Item Category Group": True, "Account Assignment Group": False,
+            "Volume Commission Group": False, "Pricing Reference Product": False,
+            "Product Statistics Group": False, "Product Group 1 to 5": False
+        },
+        "8. Tax Classification (S_MLAN)": {
             "Product Number": True, "Country/Region": True, "Tax Category 1": True,
             "Tax Classification 1": True, "Tax Category 2": False,
             "Tax Classification 2": False, "Tax Category 3": False,
@@ -583,7 +598,7 @@ def render_configuration_dashboard():
             "Tax Classification 8": False, "Tax Category 9": False,
             "Tax Classification 9": False,
         },
-        "8. Plant Data (S_MARC)": {
+        "9. Plant Data (S_MARC)": {
             "Product Number": True, "Plant": True, "MRP Type": False,
             "MRP Controller": False, "Availability Check": False,
             "Plant-Specific Product Status": False, "Valid From Date for Status": False,
@@ -639,13 +654,13 @@ def render_configuration_dashboard():
             "Indicator: Storage": False, "Indicator: Work Scheduling": False,
             "Indicator: Purchasing": False, "Indicator: Quality": False
         },
-        "9. Storage Locations (S_MARD)": {
+        "10. Storage Locations (S_MARD)": {
             "Product Number": True, "Plant": True, "Storage Location": True, "Storage Bin": False
         },
-        "10. MRP Area (S_MRP_AREA)": {
+        "11. MRP Area (S_MRP_AREA)": {
             "Product Number": True, "MRP Area": True, "Plant": True, "MRP Type": False
         },
-        "11. Valuation Data (S_MBEW)": {
+        "12. Valuation Data (S_MBEW)": {
             "Product Number": True, "Valuation Area": True, "Valuation Type": False,
             "Valuation Class": False, "Price Control Indicator": False, "Price Unit": False,
             "Standard Price": False, "Moving Average Price/Periodic Unit Price": False,
@@ -826,7 +841,8 @@ def render_configuration_dashboard():
         try:
             response = supabase.table("field_mappings").select("field_name").eq("project_name", current_proj).eq("mapping_type", "Based on Fixed Rules").execute()
             
-            standard_keys = ["Product Type", "Product Group", "Plant"]
+            # Re-added the Sales Organization and Distribution Channel keys
+            standard_keys = ["Product Type", "Product Group", "Plant", "Sales Organization", "Distribution Channel"]
             rule_fields = []
             for row in response.data:
                 fname = row['field_name']
@@ -890,7 +906,8 @@ def render_configuration_dashboard():
         st.markdown("Inject raw data into the SAP Migration template based on configured logic.")
         
         current_proj = st.session_state['current_project']
-        base_columns = ["Product Number", "Product Description", "Product Type", "Product Group", "Plant"]
+        # Re-added the Sales Organization and Distribution Channel base columns
+        base_columns = ["Product Number", "Product Description", "Product Type", "Product Group", "Plant", "Sales Organization", "Distribution Channel"]
         
         try:
             res_mappings = supabase.table("field_mappings").select("*").eq("project_name", current_proj).execute()
@@ -953,9 +970,12 @@ def render_configuration_dashboard():
                             for mat_index, material in enumerate(user_materials):
                                 matched_rule = {}
                                 for rule in saved_rules:
+                                    # Updated rule mapping check to include Sales Organization & Distribution Channel
                                     if (str(rule.get("Product Type", "")) == str(material.get("Product Type", "")) and
                                         str(rule.get("Product Group", "")) == str(material.get("Product Group", "")) and
-                                        str(rule.get("Plant", "")) == str(material.get("Plant", ""))):
+                                        str(rule.get("Plant", "")) == str(material.get("Plant", "")) and
+                                        str(rule.get("Sales Organization", "")) == str(material.get("Sales Organization", "")) and
+                                        str(rule.get("Distribution Channel", "")) == str(material.get("Distribution Channel", ""))):
                                         matched_rule = rule
                                         break
                                 
